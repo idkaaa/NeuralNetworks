@@ -1,36 +1,8 @@
-'''
-This script perfoms the basic process for applying a machine learning
-algorithm to a dataset using Python libraries.
-
-The four steps are:
-   1. Download a dataset (using pandas)
-   2. Process the numeric data (using numpy)
-   3. Train and evaluate learners (using scikit-learn)
-   4. Plot and compare results (using matplotlib)
-
-
-The data is downloaded from URL, which is defined below. As is normal
-for machine learning problems, the nature of the source data affects
-the entire solution. When you change URL to refer to your own data, you
-will need to review the data processing steps to ensure they remain
-correct.
-
-============
-Example Data
-============
-The example is from http://mlr.cs.umass.edu/ml/datasets/Spambase
-It contains pre-processed metrics, such as the frequency of certain
-words and letters, from a collection of emails. A classification for
-each one indicating 'spam' or 'not spam' is in the final column.
-See the linked page for full details of the data set.
-
-This script uses three classifiers to predict the class of an email
-based on the metrics. These are not representative of modern spam
-detection systems.
-'''
+print(__doc__)
 
 # Remember to update the script for the new data when you change this URL
-URL = "http://mlr.cs.umass.edu/ml/machine-learning-databases/spambase/spambase.data"
+#URL = "http://mlr.cs.umass.edu/ml/machine-learning-databases/spambase/spambase.data"
+URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
 
 # Uncomment this call when using matplotlib to generate images
 # rather than displaying interactive UI.
@@ -47,7 +19,128 @@ try:
 except ImportError:
     pass
 
-# =====================================================================
+import numpy as np
+from matplotlib import pyplot as plt
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.datasets import load_digits
+from sklearn.model_selection import learning_curve
+from sklearn.model_selection import ShuffleSplit
+
+import time
+
+
+
+
+def IrisFeaturesToNumbers(frame):
+    frame.replace(
+        to_replace = {4: #<-The column to replace 
+         {
+             'Iris-setosa': '1', 
+             'Iris-versicolor': '2',
+             'Iris-virginica': '3'
+             }},
+        inplace=True
+        )
+    return frame
+
+def p_Plot_Subplots_Learning_Curve(title, train_scores, test_scores, cost_values):
+    f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+   
+    plt.title(title)
+
+    ax1.xlabel("Iterations")
+    ax1.ylabel("Score")
+    
+    #number of steps on the X-axis
+    train_sizes = np.linspace(1, len(train_scores), len(train_scores))
+   
+    ax1.grid()
+    
+    ax1.plot(train_sizes, train_scores, 'o-', color="r",
+             label="Training score")
+    ax1.plot(train_sizes, test_scores, 'o-', color="g",
+             label="Cross-validation score")
+
+    ax1.legend(loc="best")
+
+
+    ax1.xlabel("Iterations")
+    ax1.ylabel("Cost")
+
+    ax2.grid()
+    
+    ax2.plot(train_sizes, cost_values, 'o-', color="b",
+             label="Cost Value")
+
+    ax2.legend(loc="best")
+
+
+    return plt
+
+def plot_learning_curve(title, train_scores, test_scores):
+    """
+    Generate a simple plot of the test and training learning curve.
+
+    Parameters
+    ----------
+    estimator : object type that implements the "fit" and "predict" methods
+        An object of that type which is cloned for each validation.
+
+    title : string
+        Title for the chart.
+
+    X : array-like, shape (n_samples, n_features)
+        Training vector, where n_samples is the number of samples and
+        n_features is the number of features.
+
+    y : array-like, shape (n_samples) or (n_samples, n_features), optional
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+
+    ylim : tuple, shape (ymin, ymax), optional
+        Defines minimum and maximum yvalues plotted.
+
+    cv : int, cross-validation generator or an iterable, optional
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+          - None, to use the default 3-fold cross-validation,
+          - integer, to specify the number of folds.
+          - An object to be used as a cross-validation generator.
+          - An iterable yielding train/test splits.
+
+        For integer/None inputs, if ``y`` is binary or multiclass,
+        :class:`StratifiedKFold` used. If the estimator is not a classifier
+        or if ``y`` is neither binary nor multiclass, :class:`KFold` is used.
+
+        Refer :ref:`User Guide <cross_validation>` for the various
+        cross-validators that can be used here.
+
+    n_jobs : integer, optional
+        Number of jobs to run in parallel (default 1).
+    """
+
+   
+
+    plt.figure()
+    plt.title(title)
+    plt.xlabel("Iterations")
+    plt.ylabel("Score")
+    
+    #number of steps on the X-axis
+    train_sizes = np.linspace(1, len(train_scores), len(train_scores))
+   
+    plt.grid()
+    
+    plt.plot(train_sizes, train_scores, 'o-', color="r",
+             label="Training score")
+    plt.plot(train_sizes, test_scores, 'o-', color="g",
+             label="Cross-validation score")
+
+    plt.legend(loc="best")
+
+    return plt
 
 def download_data():
     '''
@@ -106,185 +199,71 @@ def download_data():
     # Return the entire frame
     return frame
 
+def p_FormatData(DataFrame):
+    data = frame.values[:,0:4]
+    target = frame.values[:,4]
 
-# =====================================================================
-
-
-def get_features_and_labels(frame):
-    '''
-    Transforms and scales the input data and returns numpy arrays for
-    training and testing inputs and targets.
-    '''
-
-    # Replace missing values with 0.0, or we can use
-    # scikit-learn to calculate missing values (below)
-    #frame[frame.isnull()] = 0.0
-
-    # Convert values to floats
-    arr = np.array(frame, dtype=np.float)
-
-    # Use the last column as the target value
-    X, y = arr[:, :-1], arr[:, -1]
-    # To use the first column instead, change the index value
-    #X, y = arr[:, 1:], arr[:, 0]
-    
-    # Use 80% of the data for training; test against the rest
-    from sklearn.model_selection import train_test_split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-    # sklearn.pipeline.make_pipeline could also be used to chain 
-    # processing and classification into a black box, but here we do
-    # them separately.
-    
-    # If values are missing we could impute them from the training data
-    #from sklearn.preprocessing import Imputer
-    #imputer = Imputer(strategy='mean')
-    #imputer.fit(X_train)
-    #X_train = imputer.transform(X_train)
-    #X_test = imputer.transform(X_test)
-    
-    # Normalize the attribute values to mean=0 and variance=1
+     # Normalize the attribute values to mean=0 and variance=1
     from sklearn.preprocessing import StandardScaler
     scaler = StandardScaler()
-    # To scale to a specified range, use MinMaxScaler
-    #from sklearn.preprocessing import MinMaxScaler
-    #scaler = MinMaxScaler(feature_range=(0, 1))
-    
-    # Fit the scaler based on the training data, then apply the same
-    # scaling to both training and test sets.
-    scaler.fit(X_train)
-    X_train = scaler.transform(X_train)
-    X_test = scaler.transform(X_test)
 
-    # Return the training and test sets
-    return X_train, X_test, y_train, y_test
+    scaler.fit(data)
+    data = scaler.transform(data)
 
+    return data, target
 
-# =====================================================================
+def p_GetNeuralNetworkLearningCurve(Classifier, X_train, y_train, X_test, y_test):
+    train_scores = []
+    test_scores = []
+    cost_values = []
+    clf = Classifier
+    StartTime = time.time()
+    for i in range(0, 20):
+        clf.fit(X_train, y_train)
+        train_score = clf.score(X_train, y_train)
+        train_scores.append(train_score)
+        test_score = clf.score(X_test, y_test)
+        test_scores.append(test_score)
+        cost_value = clf.loss_
+        cost_values.append(cost_value)
+    EndTime = time.time()
+    TotalTime = EndTime - StartTime
 
+    return train_scores, test_scores, cost_values, TotalTime
 
-def evaluate_classifier(X_train, X_test, y_train, y_test):
-    '''
-    Run multiple times with different classifiers to get an idea of the
-    relative performance of each configuration.
+frame = download_data()
 
-    Returns a sequence of tuples containing:
-        (title, precision, recall)
-    for each learner.
-    '''
+data, target = p_FormatData(frame)
 
-    # Import some classifiers to test
-    from sklearn.svm import LinearSVC, NuSVC
-    from sklearn.ensemble import AdaBoostClassifier
-
-    # We will calculate the P-R curve for each classifier
-    from sklearn.metrics import precision_recall_curve, f1_score
-    
-    # Here we create classifiers with default parameters. These need
-    # to be adjusted to obtain optimal performance on your data set.
-    
-    # Test the linear support vector classifier
-    classifier = LinearSVC(C=1)
-    # Fit the classifier
-    classifier.fit(X_train, y_train)
-    score = f1_score(y_test, classifier.predict(X_test))
-    # Generate the P-R curve
-    y_prob = classifier.decision_function(X_test)
-    precision, recall, _ = precision_recall_curve(y_test, y_prob)
-    # Include the score in the title
-    yield 'Linear SVC (F1 score={:.3f})'.format(score), precision, recall
-
-    # Test the Nu support vector classifier
-    classifier = NuSVC(kernel='rbf', nu=0.5, gamma=1e-3)
-    # Fit the classifier
-    classifier.fit(X_train, y_train)
-    score = f1_score(y_test, classifier.predict(X_test))
-    # Generate the P-R curve
-    y_prob = classifier.decision_function(X_test)
-    precision, recall, _ = precision_recall_curve(y_test, y_prob)
-    # Include the score in the title
-    yield 'NuSVC (F1 score={:.3f})'.format(score), precision, recall
-
-    # Test the Ada boost classifier
-    classifier = AdaBoostClassifier(n_estimators=50, learning_rate=1.0, algorithm='SAMME.R')
-    # Fit the classifier
-    classifier.fit(X_train, y_train)
-    score = f1_score(y_test, classifier.predict(X_test))
-    # Generate the P-R curve
-    y_prob = classifier.decision_function(X_test)
-    precision, recall, _ = precision_recall_curve(y_test, y_prob)
-    # Include the score in the title
-    yield 'Ada Boost (F1 score={:.3f})'.format(score), precision, recall
-
-# =====================================================================
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(data, target, test_size=0.33)
 
 
-def plot(results):
-    '''
-    Create a plot comparing multiple learners.
 
-    `results` is a list of tuples containing:
-        (title, precision, recall)
-    
-    All the elements in results will be plotted.
-    '''
+clf = MLPClassifier(
+    solver = 'lbfgs',
+    alpha = 1e-5,
+    hidden_layer_sizes = (3),
+    random_state = 1,
+    warm_start = True,
+    max_iter = 1,
+    verbose = True
+    )
+train_scores, test_scores, cost_values, TotalTime = p_GetNeuralNetworkLearningCurve(clf, X_train, y_train, X_test, y_test)
 
-    # Plot the precision-recall curves
+plot_learning_curve("Neural Network Learning Curve Graph", train_scores, test_scores)
 
-    fig = plt.figure(figsize=(6, 6))
-    fig.canvas.set_window_title('Classifying data from ' + URL)
+#p_Plot_Subplots_Learning_Curve("Neural Network Learning Curve Graph", train_scores, test_scores, cost_values)
 
-    for label, precision, recall in results:
-        plt.plot(recall, precision, label=label)
+OtherStats = "Total Run Time: {} \n".format(TotalTime)
 
-    plt.title('Precision-Recall Curves')
-    plt.xlabel('Precision')
-    plt.ylabel('Recall')
-    plt.legend(loc='lower left')
-
-    # Let matplotlib improve the layout
-    plt.tight_layout()
-
-    # ==================================
-    # Display the plot in interactive UI
-    plt.show()
-
-    # To save the plot to an image file, use savefig()
-    #plt.savefig('plot.png')
-
-    # Open the image file with the default image viewer
-    #import subprocess
-    #subprocess.Popen('plot.png', shell=True)
-
-    # To save the plot to an image in memory, use BytesIO and savefig()
-    # This can then be written to any stream-like object, such as a
-    # file or HTTP response.
-    #from io import BytesIO
-    #img_stream = BytesIO()
-    #plt.savefig(img_stream, fmt='png')
-    #img_bytes = img_stream.getvalue()
-    #print('Image is {} bytes - {!r}'.format(len(img_bytes), img_bytes[:8] + b'...'))
-
-    # Closing the figure allows matplotlib to release the memory used.
-    plt.close()
+#Create empty plot with blank marker containing the extra label
+plt.plot([], [], ' ', label=OtherStats)
 
 
-# =====================================================================
+plt.legend()
 
 
-if __name__ == '__main__':
-    # Download the data set from URL
-    print("Downloading data from {}".format(URL))
-    frame = download_data()
+#TODO: timer
 
-    # Process data into feature and label arrays
-    print("Processing {} samples with {} attributes".format(len(frame.index), len(frame.columns)))
-    X_train, X_test, y_train, y_test = get_features_and_labels(frame)
-
-    # Evaluate multiple classifiers on the data
-    print("Evaluating classifiers")
-    results = list(evaluate_classifier(X_train, X_test, y_train, y_test))
-
-    # Display the results
-    print("Plotting the results")
-    plot(results)
+plt.show()
