@@ -136,7 +136,7 @@ def plot_learning_curve(title, train_scores, test_scores):
     plt.plot(train_sizes, train_scores, 'o-', color="r",
              label="Training score")
     plt.plot(train_sizes, test_scores, 'o-', color="g",
-             label="Cross-validation score")
+             label="Testing score")
 
     plt.legend(loc="best")
 
@@ -212,6 +212,10 @@ def p_FormatData(DataFrame):
 
     return data, target
 
+def p_SplitData(TrainData, TargetData):
+    from sklearn.model_selection import train_test_split
+    return train_test_split(data, target, test_size=0.33)
+
 def p_GetNeuralNetworkLearningCurve(Classifier, X_train, y_train, X_test, y_test):
     train_scores = []
     test_scores = []
@@ -235,10 +239,7 @@ frame = download_data()
 
 data, target = p_FormatData(frame)
 
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(data, target, test_size=0.33)
-
-
+X_train, X_test, y_train, y_test = p_SplitData(data, target)
 
 clf = MLPClassifier(
     solver = 'lbfgs',
