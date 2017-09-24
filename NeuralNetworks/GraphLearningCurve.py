@@ -15,11 +15,11 @@ import PimaIndiansData as MyData
 #
 # This method plots the actual curve.
 # 
-def p_PlotComplexityCurve(title, train_scores, test_scores, LossList):
+def plot_learning_curve(title, train_scores, test_scores, LossList):
 
     figure = plt.figure()
     plt.title(title)
-    plt.xlabel("Number of Iterations")
+    plt.xlabel("Training Set Size (n samples)")
     plt.ylabel("Training and Testing Scores")
     
     #number of steps on the X-axis
@@ -37,11 +37,9 @@ def p_PlotComplexityCurve(title, train_scores, test_scores, LossList):
     return plt
 
 #
-# This method classifies the data and gathers the data for model complexity
-# Analysis. It expects a classifier with a maximum iteration of one and steps
-# through each iteration and captures the score data.
+# This method trains the classifier and outputs the learning curve data
 #
-def p_GetModelComplexityCurveData(Classifier, X_train, y_train, X_test, y_test):
+def p_GetNeuralNetworkLearningCurve(Classifier, X_train, y_train, X_test, y_test):
     train_scores = []
     p_ElapsedTrainingTime = 0.0
     test_scores = []
@@ -49,16 +47,18 @@ def p_GetModelComplexityCurveData(Classifier, X_train, y_train, X_test, y_test):
     test_times = []
     LossList = []
     clf = Classifier
-
-    # For each iteration through the classifier...
-    for i in range(0, 300):
-        
+    
+    for i in range(200):
+        i += 1
+        SampleCount = i
+        X_trainLearningCurve = X_train[:SampleCount]
+        y_trainLearningCurve = y_train[:SampleCount]
         StartTrainTime = time.time()
-        clf.fit(X_train, y_train)
+        clf.fit(X_trainLearningCurve, y_trainLearningCurve)
         p_ElapsedTrainingTime += time.time() - StartTrainTime
         
         StartTestTime = time.time()
-        train_score = clf.score(X_train, y_train)
+        train_score = clf.score(X_trainLearningCurve, y_trainLearningCurve)
         train_scores.append(train_score)
         test_score = clf.score(X_test, y_test)
         test_scores.append(test_score)
@@ -68,6 +68,7 @@ def p_GetModelComplexityCurveData(Classifier, X_train, y_train, X_test, y_test):
         LossList.append(cost_value)
         print("Training Score: %.3f | Test Score: %.3f | Loss: %f\n" % (
             train_score, test_score, cost_value))
+   
 
     return train_scores, test_scores, LossList, p_ElapsedTrainingTime, p_ElapsedTestingTime
 
@@ -78,8 +79,8 @@ def p_GetModelComplexityCurveData(Classifier, X_train, y_train, X_test, y_test):
 ###############################################################################
 
 # Get the data ready
-frame = MyData.download_data()
-data, target = MyData.p_FormatData(frame)
+DataFrame = MyData.download_data()
+data, target = MyData.p_FormatData(DataFrame)
 X_train, X_test, y_train, y_test = MyData.p_SplitData(data, target)
 
 # Initialize the configuration of the classifier
@@ -87,13 +88,12 @@ clf = MLPClassifier(
     solver = 'sgd',
     hidden_layer_sizes = (50),
     random_state = 1,
-    max_iter = 1,
-    learning_rate_init = 0.01,
-    warm_start = True,
+    max_iter = 300,
+    learning_rate_init = 0.01
     )
 
 # Fit and get results from the data
-train_scores, test_scores, LossList, TotalTrainTime, TotalTestTime = p_GetModelComplexityCurveData(clf, X_train, y_train, X_test, y_test)
+train_scores, test_scores, LossList, TotalTrainTime, TotalTestTime = p_GetNeuralNetworkLearningCurve(clf, X_train, y_train, X_test, y_test)
 
 # Format the parameters to be displayed on the title of the graph 
 import json
@@ -102,7 +102,7 @@ ParameterString = json.dumps(clf.get_params())
 ParameterString = "\n".join(wrap(ParameterString))
 
 # Plot the graph
-p_PlotComplexityCurve("Neural Network Learning Curve Graph: \n" + ParameterString, train_scores, test_scores, LossList)
+plot_learning_curve("Neural Network Learning Curve Graph: \n" + ParameterString, train_scores, test_scores, LossList)
 
 #Create empty plot with blank marker containing the extra label in the legend
 OtherStats = "Total Training Time: %.2fs\nTotal TestingTime: %.2fs" % (TotalTrainTime, TotalTestTime)

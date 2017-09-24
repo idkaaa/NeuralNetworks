@@ -23,11 +23,13 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="classifier.py" />
+    <Compile Include="GraphLearningCurve.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GraphModelComplexity.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="module1.py">
+    <Compile Include="PimaIndiansData.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
