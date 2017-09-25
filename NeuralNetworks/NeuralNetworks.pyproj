@@ -23,6 +23,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="BanknotesData.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GraphLearningCurve.py">
       <SubType>Code</SubType>
     </Compile>

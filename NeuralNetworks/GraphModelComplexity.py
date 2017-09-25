@@ -9,8 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neural_network import MLPClassifier
 import time
-import PimaIndiansData as MyData
 
+#import BanknotesData as MyData
+#import PimaIndiansData as MyData
 
 #
 # This method plots the actual curve.
@@ -83,12 +84,18 @@ data, target = MyData.p_FormatData(frame)
 X_train, X_test, y_train, y_test = MyData.p_SplitData(data, target)
 
 # Initialize the configuration of the classifier
+#clf = MLPClassifier(
+#    solver = 'sgd',
+#    hidden_layer_sizes = (50),
+#    random_state = 1,
+#    max_iter = 1,
+#    warm_start = True,
+#    )
 clf = MLPClassifier(
     solver = 'sgd',
     hidden_layer_sizes = (50),
     random_state = 1,
     max_iter = 1,
-    learning_rate_init = 0.01,
     warm_start = True,
     )
 
